@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <script type="module" src="https://appassets.androidplatform.net/assets/model-viewer.min.js"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: transparent;
+        }
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            --poster-color: transparent;
+        }
+    </style>
+</head>
+<body>
+    <model-viewer id="doll"
+        src=""
+        auto-rotate
+        rotation-per-second="14deg"
+        autoplay
+        shadow-intensity="0.95"
+        shadow-softness="0.8"
+        exposure="1.05"
+        camera-orbit="0deg 75deg 105%"
+        animation-crossfade-duration="300"
+        interaction-prompt="none"
+        loading="eager">
+    </model-viewer>
+    <script>
+        const mv = document.getElementById('doll');
+        let currentTargetAnim = 'idle';
+
+        function loadModel(src, anim) {
+            if (!mv) return;
+            if (anim) {
+                currentTargetAnim = anim;
+            }
+            if (src && mv.getAttribute('src') !== src) {
+                mv.setAttribute('src', src);
+            } else {
+                setAnim(currentTargetAnim);
+            }
+        }
+
+        function setAnim(name) {
+            if (!mv) return;
+            currentTargetAnim = name || 'idle';
+            const anims = mv.availableAnimations || [];
+            if (anims.length === 0) return;
+
+            const target = (name || '').toLowerCase();
+            let match = null;
+            
+            // 1. Walk: human alternating footstep walk cycle
+            if (target === 'walk') {
+                match = anims.find(a => {
+                    const l = a.toLowerCase();
+                    return l.includes('walk') || l.includes('move_ing') || l.includes('run');
+                });
+            } else if (target === 'run') {
+                match = anims.find(a => {
+                    const l = a.toLowerCase();
+                    return l.includes('run') || l.includes('move_ing') || l.includes('walk');
+                });
+            } else if (target === 'dance') {
+                match = anims.find(a => {
+                    const l = a.toLowerCase();
+                    return l.includes('victory') || l.includes('exs') || l.includes('dance') || l.includes('jump');
+                });
+            } else if (target === 'jump') {
+                match = anims.find(a => {
+                    const l = a.toLowerCase();
+                    return l.includes('move_jump') || l.includes('jump');
+                });
+            } else if (target === 'fall') {
+                match = anims.find(a => {
+                    const l = a.toLowerCase();
+                    return l.includes('panic') || l.includes('death') || l.includes('fall') || l.includes('kneel');
+                });
+            } else if (target === 'sit') {
+                match = anims.find(a => {
+                    const l = a.toLowerCase();
+                    return l.includes('kneel') || l.includes('sit');
+                });
+            } else if (target === 'sleep') {
+                match = anims.find(a => {
+                    const l = a.toLowerCase();
+                    return l.includes('kneel_idle') || l.includes('sit') || l.includes('death') || l.includes('idle');
+                });
+            } else if (target === 'wakeup') {
+                match = anims.find(a => {
+                    const l = a.toLowerCase();
+                    return l.includes('stand') || l.includes('idle');
+                });
+            } else if (target === 'think') {
+                match = anims.find(a => {
+                    const l = a.toLowerCase();
+                    return l.includes('callsign') || l.includes('yes') || l.includes('no') || l.includes('idle');
+                });
+            } else if (target === 'drag') {
+                match = anims.find(a => {
+                    const l = a.toLowerCase();
+                    return l.includes('pickup') || l.includes('wave') || l.includes('jump');
+                });
+            } else if (target === 'tap' || target === 'wave') {
+                match = anims.find(a => {
+                    const l = a.toLowerCase();
+                    return l.includes('reaction') || l.includes('pickup') || l.includes('wave') || l.includes('thumbsup') || l.includes('jump');
+                });
+            } else if (target === 'idle') {
+                match = anims.find(a => {
+                    const l = a.toLowerCase();
+                    return l.includes('formation_idle') || l.includes('cafe_idle') || l.includes('stand_idle') || l.includes('idle') || l.includes('stand') || l.includes('survey');
+                });
+            }
+            
+            // Substring fallback
+            if (!match && anims.length > 0) {
+                match = anims.find(a => a.toLowerCase().includes(target) || target.includes(a.toLowerCase()));
+            }
+
+            // General fallback
+            if (!match && anims.length > 0) {
+                match = anims[0];
+            }
+            
+            if (match) {
+                mv.animationName = match;
+                mv.timeScale = (target === 'run') ? 1.4 : 1.0;
+                mv.play();
+            }
+        }
+
+        function setFacing(dir) {
+            if (!mv) return;
+            if (dir > 0) {
+                // Face right towards movement
+                mv.cameraOrbit = "70deg 75deg 105%";
+            } else if (dir < 0) {
+                // Face left towards movement
+                mv.cameraOrbit = "-70deg 75deg 105%";
+            } else {
+                // Face forward towards camera
+                mv.cameraOrbit = "0deg 75deg 105%";
+            }
+        }
+
+        function rotate360(deg) {
+            if (!mv) return;
+            try {
+                const orb = mv.getCameraOrbit();
+                const newDeg = (orb.theta * 180 / Math.PI) + deg;
+                mv.cameraOrbit = newDeg + 'deg 75deg 105%';
+            } catch(e) {}
+        }
+
+        mv.addEventListener('load', () => {
+            setAnim(currentTargetAnim || 'idle');
+        });
+    </script>
+</body>
+</html>
