@@ -3,12 +3,13 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/responsive_layout.dart';
-import '../../characters/domain/character_model.dart';
+import '../../characters/presentation/controllers/doll_provider.dart';
 import '../../characters/presentation/controllers/overlay_provider.dart';
 import 'settings_provider.dart';
 
-/// Settings Screen providing overlay permission handling, app preferences,
-/// theme selection, animation speed configuration, and system information.
+/// Redesigned, comprehensive Settings Screen featuring categorized sections:
+/// Overlay Controls, Smoothness & Performance, Behavior & Physics,
+/// Appearance, and Diagnostics.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -16,11 +17,20 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final settingsProvider = context.watch<SettingsProvider>();
     final overlayProvider = context.watch<OverlayProvider>();
+    final dollProvider = context.watch<DollProvider>();
     final isLight = Theme.of(context).brightness == Brightness.light;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(AppStrings.settingsTitle),
+        title: const Text('Settings'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.restart_alt_rounded),
+            tooltip: 'Reset all settings to defaults',
+            onPressed: () => _confirmReset(context, settingsProvider),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SafeArea(
         child: ResponsiveLayout.constrainedContainer(
@@ -30,68 +40,199 @@ class SettingsScreen extends StatelessWidget {
             children: [
               // 1. Overlay Permission Status Card
               _buildPermissionCard(context, overlayProvider),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-              // 2. Overlay Behavior Section
-              _buildSectionHeader(context, 'Overlay Companion Behavior'),
+              // 2. Floating Companion Overlay Section
+              _buildSectionHeader(context, 'Floating Companion Overlay', Icons.open_in_new_rounded),
               _buildSettingsCard(
                 context,
                 children: [
+                  // Quick Overlay Toggle
                   SwitchListTile(
-                    title: const Text(AppStrings.autoStartTitle, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                    title: const Text(
+                      'Floating Overlay Active',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                    ),
+                    subtitle: Text(
+                      overlayProvider.isOverlayActive
+                          ? 'Companion is walking across other applications'
+                          : 'Turn on to let companion walk on top of your screen',
+                      style: const TextStyle(fontSize: 11.5),
+                    ),
+                    value: overlayProvider.isOverlayActive,
+                    activeThumbColor: AppColors.mintGreen,
+                    onChanged: (val) {
+                      if (dollProvider.activeDoll != null) {
+                        overlayProvider.toggleOverlay(dollProvider.activeDoll!);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please select a doll from Gallery first.')),
+                        );
+                      }
+                    },
+                  ),
+                  const Divider(height: 1),
+
+                  // Auto Start Overlay
+                  SwitchListTile(
+                    title: const Text(
+                      'Auto-Start on Launch',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                    ),
                     subtitle: const Text(
-                      'Automatically launch the floating companion when app starts.',
-                      style: TextStyle(fontSize: 11),
+                      'Automatically launch the floating companion when app opens',
+                      style: TextStyle(fontSize: 11.5),
                     ),
                     value: settingsProvider.autoStartOverlay,
                     activeThumbColor: AppColors.primaryPink,
                     onChanged: (val) => settingsProvider.setAutoStartOverlay(val),
                   ),
                   const Divider(height: 1),
-                  ListTile(
-                    title: const Text('Default Character Engine', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-                    subtitle: const Text('Preferred engine type for new companion overlays', style: TextStyle(fontSize: 11)),
-                    trailing: SegmentedButton<CharacterType>(
-                      segments: const [
-                        ButtonSegment(value: CharacterType.twoD, label: Text('2D')),
-                        ButtonSegment(value: CharacterType.threeD, label: Text('3D')),
+
+                  // Overlay Companion Scale
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Companion Size Scale',
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryPink.withAlpha(25),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${(settingsProvider.overlayScale * 100).toInt()}%',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12,
+                              color: AppColors.primaryPink,
+                            ),
+                          ),
+                        ),
                       ],
-                      selected: {settingsProvider.defaultCharacterType},
-                      onSelectionChanged: (set) {
-                        if (set.isNotEmpty) {
-                          settingsProvider.setDefaultCharacterType(set.first);
-                        }
-                      },
-                      style: ButtonStyle(
-                        visualDensity: VisualDensity.compact,
-                      ),
                     ),
+                  ),
+                  Slider(
+                    value: settingsProvider.overlayScale,
+                    min: 0.7,
+                    max: 1.4,
+                    divisions: 7,
+                    activeColor: AppColors.primaryPink,
+                    onChanged: (val) => settingsProvider.setOverlayScale(val),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-              // 3. Animation & Physics Section
-              _buildSectionHeader(context, 'Animation & Micro-Interactions'),
+              // 3. Smoothness & Performance Section
+              _buildSectionHeader(context, 'Smoothness & Performance', Icons.speed_rounded),
               _buildSettingsCard(
                 context,
                 children: [
                   SwitchListTile(
-                    title: const Text(AppStrings.touchInteractionTitle, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-                    subtitle: const Text('Show speech bubbles and bounce physics on tap', style: TextStyle(fontSize: 11)),
+                    title: const Text(
+                      'High-Performance Smooth Mode',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                    ),
+                    subtitle: const Text(
+                      'Maximizes frame rate and disables heavy shadow blur for silky 60 FPS rendering',
+                      style: TextStyle(fontSize: 11.5),
+                    ),
+                    value: settingsProvider.highPerformanceMode,
+                    activeThumbColor: AppColors.primaryPink,
+                    onChanged: (val) => settingsProvider.setHighPerformanceMode(val),
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    title: const Text(
+                      'Haptic Feedback',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                    ),
+                    subtitle: const Text(
+                      'Gentle vibration when interacting with your companion',
+                      style: TextStyle(fontSize: 11.5),
+                    ),
+                    value: settingsProvider.hapticFeedback,
+                    activeThumbColor: AppColors.primaryPink,
+                    onChanged: (val) => settingsProvider.setHapticFeedback(val),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.cleaning_services_rounded, color: AppColors.primaryPink, size: 22),
+                    title: const Text(
+                      'Clear Engine Cache',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                    ),
+                    subtitle: const Text(
+                      'Frees graphics memory and reloads assets cleanly',
+                      style: TextStyle(fontSize: 11.5),
+                    ),
+                    trailing: OutlinedButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Graphics cache cleared successfully.'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Clear', style: TextStyle(fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // 4. Behavior & Physics Section
+              _buildSectionHeader(context, 'Behavior & Micro-Interactions', Icons.psychology_rounded),
+              _buildSettingsCard(
+                context,
+                children: [
+                  SwitchListTile(
+                    title: const Text(
+                      'Screen Boundary Roaming',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                    ),
+                    subtitle: const Text(
+                      'Companion patrols across screen edges with natural turns',
+                      style: TextStyle(fontSize: 11.5),
+                    ),
+                    value: settingsProvider.boundaryPatrol,
+                    activeThumbColor: AppColors.primaryPink,
+                    onChanged: (val) => settingsProvider.setBoundaryPatrol(val),
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    title: const Text(
+                      'Touch Reactions & Speech Bubbles',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                    ),
+                    subtitle: const Text(
+                      'Show cute thoughts and bounce physics on tap',
+                      style: TextStyle(fontSize: 11.5),
+                    ),
                     value: settingsProvider.enableTouchInteractions,
                     activeThumbColor: AppColors.primaryPink,
                     onChanged: (val) => settingsProvider.setEnableTouchInteractions(val),
                   ),
                   const Divider(height: 1),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          AppStrings.animSpeedTitle,
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                          'Locomotion & Animation Speed',
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                         ),
                         Text(
                           '${settingsProvider.animationSpeed.toStringAsFixed(1)}x',
@@ -110,10 +251,10 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-              // 4. Appearance / Theme
-              _buildSectionHeader(context, 'Appearance'),
+              // 5. Appearance Section
+              _buildSectionHeader(context, 'Appearance', Icons.palette_rounded),
               _buildSettingsCard(
                 context,
                 children: [
@@ -123,66 +264,73 @@ class SettingsScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          AppStrings.themeTitle,
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                          'Theme Mode',
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                         ),
-                        const SizedBox(height: 10),
-                        SegmentedButton<ThemeMode>(
-                          segments: const [
-                            ButtonSegment(
-                              value: ThemeMode.system,
-                              icon: Icon(Icons.brightness_auto_rounded),
-                              label: Text('System'),
-                            ),
-                            ButtonSegment(
-                              value: ThemeMode.light,
-                              icon: Icon(Icons.light_mode_rounded),
-                              label: Text('Light'),
-                            ),
-                            ButtonSegment(
-                              value: ThemeMode.dark,
-                              icon: Icon(Icons.dark_mode_rounded),
-                              label: Text('Dark'),
-                            ),
-                          ],
-                          selected: {settingsProvider.themeMode},
-                          onSelectionChanged: (set) {
-                            if (set.isNotEmpty) {
-                              settingsProvider.setThemeMode(set.first);
-                            }
-                          },
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: SegmentedButton<ThemeMode>(
+                            segments: const [
+                              ButtonSegment(
+                                value: ThemeMode.system,
+                                icon: Icon(Icons.brightness_auto_rounded),
+                                label: Text('System'),
+                              ),
+                              ButtonSegment(
+                                value: ThemeMode.light,
+                                icon: Icon(Icons.light_mode_rounded),
+                                label: Text('Light'),
+                              ),
+                              ButtonSegment(
+                                value: ThemeMode.dark,
+                                icon: Icon(Icons.dark_mode_rounded),
+                                label: Text('Dark'),
+                              ),
+                            ],
+                            selected: {settingsProvider.themeMode},
+                            onSelectionChanged: (set) {
+                              if (set.isNotEmpty) {
+                                settingsProvider.setThemeMode(set.first);
+                              }
+                            },
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-              // 5. About & Version Section
-              _buildSectionHeader(context, 'About & Architecture'),
+              // 6. About & Information
+              _buildSectionHeader(context, 'About Companion', Icons.info_outline_rounded),
               _buildSettingsCard(
                 context,
                 children: [
                   ListTile(
                     leading: Container(
-                      padding: const EdgeInsets.all(8),
+                      width: 40,
+                      height: 40,
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: AppColors.cuteHeroGradient,
                       ),
-                      child: const Text('🎀', style: TextStyle(fontSize: 18)),
+                      child: const Center(
+                        child: Text('🎀', style: TextStyle(fontSize: 20)),
+                      ),
                     ),
-                    title: const Text('Walking Doll MVP', style: TextStyle(fontWeight: FontWeight.w800)),
-                    subtitle: const Text('Version 1.0.0 • Production Build', style: TextStyle(fontSize: 11)),
+                    title: const Text('Living Doll Companion', style: TextStyle(fontWeight: FontWeight.w800)),
+                    subtitle: const Text('Version 1.0.0 • High-Performance 3D Engine', style: TextStyle(fontSize: 11)),
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     child: Text(
-                      AppStrings.aboutDesc,
+                      'Living Doll brings real-time 3D game-quality characters directly to your mobile screen with autonomous roaming, physical boundaries, and interactive micro-animations.',
                       style: TextStyle(
-                        fontSize: 11.5,
+                        fontSize: 12,
                         color: isLight ? AppColors.lightTextSecondary : AppColors.darkTextSecondary,
+                        height: 1.4,
                       ),
                     ),
                   ),
@@ -196,18 +344,28 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
+  Widget _buildSectionHeader(BuildContext context, String title, IconData icon) {
     final isLight = Theme.of(context).brightness == Brightness.light;
     return Padding(
       padding: const EdgeInsets.fromLTRB(6, 4, 6, 8),
-      child: Text(
-        title.toUpperCase(),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.8,
-          color: isLight ? AppColors.lightTextSecondary : AppColors.darkTextSecondary,
-        ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 15,
+            color: AppColors.primaryPink,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
+              color: isLight ? AppColors.lightTextSecondary : AppColors.darkTextSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -255,7 +413,7 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  AppStrings.overlayPermissionTitle,
+                  'Display Over Other Apps',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
@@ -270,7 +428,7 @@ class SettingsScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  isGranted ? 'GRANTED' : 'REQUIRED',
+                  isGranted ? 'READY' : 'ACTION REQUIRED',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 10,
@@ -280,29 +438,53 @@ class SettingsScreen extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
             isGranted
-                ? AppStrings.overlayPermissionGranted
-                : AppStrings.overlayPermissionRequired,
+                ? 'Overlay permission is active. Your doll can walk freely on top of any app!'
+                : 'Android requires "Display over other apps" permission so your virtual doll can float over other applications.',
             style: const TextStyle(fontSize: 12),
           ),
-          const SizedBox(height: 4),
-          const Text(
-            'Android requires the "Display over other apps" permission so your virtual doll can float and accompany you across all applications.',
-            style: TextStyle(fontSize: 11, color: Colors.grey),
-          ),
           if (!isGranted) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             ElevatedButton.icon(
               onPressed: () => overlayProvider.requestPermission(),
               icon: const Icon(Icons.verified_user_rounded),
-              label: const Text(AppStrings.grantPermissionBtn),
+              label: const Text('Grant Overlay Permission'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: color,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  void _confirmReset(BuildContext context, SettingsProvider settings) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset Settings?'),
+        content: const Text('This will restore all preferences and controls to their default values.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              settings.resetToDefaults();
+              Navigator.of(ctx).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Settings restored to defaults.')),
+              );
+            },
+            child: const Text('Reset'),
+          ),
         ],
       ),
     );

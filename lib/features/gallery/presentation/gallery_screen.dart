@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/responsive_layout.dart';
 import '../../characters/presentation/controllers/doll_provider.dart';
 import '../../characters/presentation/widgets/doll_card.dart';
+import '../../import/presentation/import_screen.dart';
 import 'character_detail_sheet.dart';
 
 /// Gallery Screen presenting built-in and imported dolls in an adaptive responsive grid
@@ -19,6 +20,30 @@ class GalleryScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Doll Gallery'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 14),
+            child: FilledButton.tonalIcon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ImportScreen(
+                      onImportSuccess: () {
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('Import', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5)),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: _buildFilterChips(context, dollProvider),

@@ -27,11 +27,16 @@ class ThreeDCharacterEngine implements CharacterEngine {
     _autoRotate = enabled;
   }
 
+  Widget? _cachedPreview;
+  String? _cachedCharacterId;
+
   @override
   Future<void> loadCharacter(CharacterModel character) async {
     _character = character;
     _currentAnimation = CharacterAnimation.idle;
     _animationNotifier.value = _currentAnimation;
+    _cachedPreview = null;
+    _cachedCharacterId = null;
   }
 
   @override
@@ -40,7 +45,12 @@ class ThreeDCharacterEngine implements CharacterEngine {
       return const SizedBox.shrink();
     }
 
-    return ValueListenableBuilder<CharacterAnimation>(
+    if (_cachedPreview != null && _cachedCharacterId == _character!.id) {
+      return _cachedPreview!;
+    }
+
+    _cachedCharacterId = _character!.id;
+    _cachedPreview = ValueListenableBuilder<CharacterAnimation>(
       valueListenable: _animationNotifier,
       builder: (context, anim, _) {
         return ThreeDModelView(
@@ -51,6 +61,8 @@ class ThreeDCharacterEngine implements CharacterEngine {
         );
       },
     );
+
+    return _cachedPreview!;
   }
 
   @override

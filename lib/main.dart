@@ -6,6 +6,7 @@ import 'features/characters/presentation/controllers/doll_provider.dart';
 import 'features/characters/presentation/controllers/overlay_provider.dart';
 import 'features/navigation/presentation/main_scaffold.dart';
 import 'features/settings/presentation/settings_provider.dart';
+import 'features/splash/presentation/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,7 +45,7 @@ class WalkingDollApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: settings.themeMode,
-      home: const MainScaffold(),
+      home: const SplashScreen(),
     );
   }
 }

@@ -49,16 +49,22 @@ class ThreeDModelView extends StatefulWidget {
   State<ThreeDModelView> createState() => _ThreeDModelViewState();
 }
 
-class _ThreeDModelViewState extends State<ThreeDModelView> {
+class _ThreeDModelViewState extends State<ThreeDModelView>
+    with AutomaticKeepAliveClientMixin {
   WebViewController? _webViewController;
   StudioLightingPreset _activeLighting = StudioLightingPreset.studio;
   String _cameraOrbit = '0deg 75deg 105%';
   bool _isAutoRotateActive = true;
+  String? _initialAnimName;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
     _isAutoRotateActive = widget.autoRotate;
+    _initialAnimName = _resolveAnimationName();
   }
 
   @override
@@ -296,6 +302,7 @@ class _ThreeDModelViewState extends State<ThreeDModelView> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final resolvedAnimName = _resolveAnimationName();
     final hasAnimations =
         widget.character.hasEmbeddedAnimations && resolvedAnimName != null;
@@ -351,7 +358,7 @@ class _ThreeDModelViewState extends State<ThreeDModelView> {
             backgroundColor: Colors.transparent,
             exposure: _activeLighting.exposure,
             cameraOrbit: _cameraOrbit,
-            animationName: resolvedAnimName,
+            animationName: _initialAnimName ?? resolvedAnimName,
             autoPlay: hasAnimations,
             animationCrossfadeDuration: 350,
             interactionPrompt: InteractionPrompt.none,

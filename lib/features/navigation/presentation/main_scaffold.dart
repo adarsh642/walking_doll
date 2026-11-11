@@ -6,11 +6,11 @@ import '../../characters/presentation/controllers/doll_provider.dart';
 import '../../characters/presentation/controllers/overlay_provider.dart';
 import '../../gallery/presentation/gallery_screen.dart';
 import '../../home/presentation/home_screen.dart';
-import '../../import/presentation/import_screen.dart';
 import '../../settings/presentation/settings_provider.dart';
 import '../../settings/presentation/settings_screen.dart';
 
-/// Main Application Shell hosting Material 3 NavigationBar and tabs.
+/// Clean, responsive Application Shell with a streamlined 3-tab layout:
+/// Home (Stage & Overlay), Gallery (Companions & Import), and Settings.
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
 
@@ -42,9 +42,11 @@ class _MainScaffoldState extends State<MainScaffold> {
   }
 
   void _navigateToIndex(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
+    if (_currentIndex != index) {
+      setState(() {
+        _currentIndex = index;
+      });
+    }
   }
 
   @override
@@ -52,7 +54,6 @@ class _MainScaffoldState extends State<MainScaffold> {
     final screens = [
       HomeScreen(onNavigateToGallery: () => _navigateToIndex(1)),
       const GalleryScreen(),
-      ImportScreen(onImportSuccess: () => _navigateToIndex(0)),
       const SettingsScreen(),
     ];
 
@@ -66,28 +67,22 @@ class _MainScaffoldState extends State<MainScaffold> {
         onDestinationSelected: _navigateToIndex,
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded, color: AppColors.primaryPink),
-            label: AppStrings.navHome,
+            icon: Icon(Icons.favorite_border_rounded),
+            selectedIcon: Icon(Icons.favorite_rounded, color: AppColors.primaryPink),
+            label: 'Companion',
           ),
           NavigationDestination(
-            icon: Icon(Icons.collections_outlined),
-            selectedIcon: Icon(Icons.collections_rounded, color: AppColors.primaryPink),
-            label: AppStrings.navGallery,
+            icon: Icon(Icons.grid_view_outlined),
+            selectedIcon: Icon(Icons.grid_view_rounded, color: AppColors.primaryPink),
+            label: 'Gallery',
           ),
           NavigationDestination(
-            icon: Icon(Icons.add_photo_alternate_outlined),
-            selectedIcon: Icon(Icons.add_photo_alternate_rounded, color: AppColors.primaryPink),
-            label: AppStrings.navImport,
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.tune_outlined),
-            selectedIcon: Icon(Icons.tune_rounded, color: AppColors.primaryPink),
-            label: AppStrings.navSettings,
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings_rounded, color: AppColors.primaryPink),
+            label: 'Settings',
           ),
         ],
       ),
     );
   }
 }
-
